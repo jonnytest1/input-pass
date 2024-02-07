@@ -1,0 +1,7 @@
+src/env.py
+.vscode/settings.json
+sftp.json
+launch.json
+
+.history
+.env
