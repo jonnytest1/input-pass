@@ -6,10 +6,10 @@ import asyncio
 import time
 from log import log_line
 from env import keysocket
-from screen import start_screen
 from socket_wrapper import SocketWrapper
 from stopppable_thread import StoppableThread
 from kb_config import keyboards
+
 try:
 
     try:
@@ -22,10 +22,6 @@ try:
 
     # debugpy.wait_for_client()
     print("continuing")
-
-    # ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    # ssl_context.check_hostname = False
-    # ssl_context.verify_mode = ssl.CERT_NONE
 
     socket = SocketWrapper(keysocket)
 
@@ -92,9 +88,6 @@ try:
     def on_device(device: Device):
         loop.call_soon_threadsafe(thread_safe_on_device, device)
 
-    screaenThread = StoppableThread(target=start_screen)
-    screaenThread.start()
-
     asyncio.ensure_future(socket.ping())
     loop = asyncio.get_event_loop()
 
@@ -102,7 +95,6 @@ try:
     try:
         loop.run_forever()
     except KeyboardInterrupt as inter:
-        screaenThread.stop()
         print("keyboard interrupt")
         exit(0)
 
