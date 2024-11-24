@@ -4,9 +4,13 @@
 cd /home/jonathan
 echo "running python"
 sleep 1
-echo "start" > /home/jonathan/python-input.log
 
-python3 ./input.py >> /home/jonathan/python-input.log
+
+now="$(date --iso-8601)"
+
+echo "start" > /home/jonathan/python-input-$now.log
+
+python3 ./input.py >> /home/jonathan/python-input-$now.log
  
 
 

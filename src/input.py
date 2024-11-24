@@ -5,11 +5,13 @@ from evdev import InputDevice, categorize, ecodes
 import asyncio
 import time
 from log import log_line
-from env import keysocket
+from env import keysocket, mqtt_server
 from socket_wrapper import SocketWrapper
 from stopppable_thread import StoppableThread
 from kb_config import keyboards
-
+import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
+from json_print import json_print
 try:
 
     try:
@@ -25,6 +27,32 @@ try:
 
     socket = SocketWrapper(keysocket)
 
+    mqttclient = mqtt.Client(CallbackAPIVersion.VERSION2)
+
+    def on_connect(client: mqtt.Client, userdata, flags, reason_code, properties):
+        global mqttclient
+        mqttclient = client
+        print(f"Connected with result code {reason_code}")
+        # Subscribing in on_connect() means that if we lose the connection and
+        # reconnect then subscriptions will be renewed.
+        client.publish("personal/discovery/key-sender/config", json_print(dict(
+            t="key-sender",
+            fn=["key-sender"],
+            tp=["tele"],
+            commands=[]
+        )), retain=True)
+
+        layouts = dict()
+        for key in keyboards:
+            layouts[key.name] = key.layout
+
+        client.publish("personal/discovery/key-sender/layout", json_print(dict(
+            layout=layouts
+        )), retain=True)
+
+    mqttclient.on_connect = on_connect
+    mqttclient.connect(mqtt_server, 1883, 60)
+    error = mqttclient.loop_start()
     scancodes = {
         # Scancode: ASCIICode
         0: None, 1: u'ESC', 2: u'1', 3: u'2', 4: u'3', 5: u'4', 6: u'5', 7: u'6', 8: u'7', 9: u'8',
@@ -54,9 +82,9 @@ try:
                     data.scancode)  # Lookup or return UNKNOWN:XX
                 if key_lookup in keyset:
                     keyset.remove(key_lookup)
-                socket.send(
-                    dict(type="keys", data=pressed_keys))
                 print(pressed_keys)  # Print it all out!
+                socket.send(
+                    data=dict(type="keys", data=pressed_keys))
 
     async def print_events(device, keyset: set[str]):
         try:
@@ -101,4 +129,5 @@ try:
 
 except Exception as e:
     while True:
+        print(e)
         time.sleep(1)
